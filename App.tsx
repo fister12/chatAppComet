@@ -1,234 +1,63 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  ActivityIndicator,
-  TouchableOpacity,
-  Alert,
-  StatusBar,
-} from 'react-native';
-import { CometChatUIKit, UIKitSettingsBuilder } from "@cometchat/chat-uikit-react";
-import { COMETCHAT_APP_ID, COMETCHAT_REGION, COMETCHAT_AUTH_KEY } from '@env';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AppConstants } from "./src/utils/AppConstants";
+import RootStackNavigator from "./src/navigation/RootStackNavigator";
 
-interface User {
-  uid: string;
-  name: string;
-}
+const App = (): React.ReactElement => {
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [hasValidAppCredentials, setHasValidAppCredentials] = useState(true); // Set to true for now
 
-/**
- * CometChat Constants from environment variables
- */
-const COMETCHAT_CONSTANTS = {
-  APP_ID: COMETCHAT_APP_ID,
-  REGION: COMETCHAT_REGION,
-  AUTH_KEY: COMETCHAT_AUTH_KEY,
-};
-
-/**
- * Sample users for demonstration
- */
-const SAMPLE_USERS: User[] = [
-  { uid: "user1", name: "Alice Johnson" },
-  { uid: "user2", name: "Bob Smith" },
-  { uid: "user3", name: "Charlie Brown" },
-];
-
-export default function App() {
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  /**
-   * Configure the CometChat UI Kit using the UIKitSettingsBuilder
-   */
-  const UIKitSettings = new UIKitSettingsBuilder()
-    .setAppId(COMETCHAT_CONSTANTS.APP_ID)
-    .setRegion(COMETCHAT_CONSTANTS.REGION)
-    .setAuthKey(COMETCHAT_CONSTANTS.AUTH_KEY)
-    .subscribePresenceForAllUsers()
-    .build();
-
-  /**
-   * Initialize CometChat UI Kit
-   */
   useEffect(() => {
-    initializeCometChat();
+    // Simulate initialization without CometChat for now
+    const initApp = async () => {
+      try {
+        console.log("App initializing...");
+        
+        // Simulate some initialization delay
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        console.log("App initialized successfully");
+      } catch (error) {
+        console.log("Initialization error", error);
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    initApp();
   }, []);
 
-  const initializeCometChat = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      await CometChatUIKit.init(UIKitSettings);
-      console.log("CometChat UI Kit initialized successfully.");
-      setIsInitialized(true);
-    } catch (error) {
-      console.error("CometChat UI Kit initialization failed:", error);
-      setError("Failed to initialize CometChat. Please check your configuration.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  /**
-   * Login user to CometChat
-   */
-  const loginUser = async (user: User) => {
-    if (!isInitialized) {
-      Alert.alert("Error", "CometChat is not initialized yet.");
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      await CometChatUIKit.login(user.uid);
-      console.log(`User ${user.name} logged in successfully.`);
-      setCurrentUser(user);
-    } catch (error) {
-      console.error("Login failed:", error);
-      setError(`Failed to login ${user.name}. Please try again.`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  /**
-   * Logout current user
-   */
-  const logoutUser = async () => {
-    try {
-      setIsLoading(true);
-      await CometChatUIKit.logout();
-      console.log("User logged out successfully.");
-      setCurrentUser(null);
-    } catch (error) {
-      console.error("Logout failed:", error);
-      setError("Failed to logout. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  /**
-   * Render loading state
-   */
-  if (isLoading) {
+  if (isInitializing) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3f51b5" />
-          <Text style={styles.loadingText}>
-            {isInitialized ? "Connecting..." : "Initializing CometChat..."}
-          </Text>
-        </View>
-      </SafeAreaView>
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#3f51b5" />
+        <Text style={styles.loadingText}>Initializing App...</Text>
+      </View>
     );
   }
 
-  /**
-   * Render error state
-   */
-  if (error) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>Something went wrong</Text>
-          <Text style={styles.errorMessage}>{error}</Text>
-          <TouchableOpacity 
-            style={styles.retryButton} 
-            onPress={initializeCometChat}
-          >
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  /**
-   * Render main application
-   */
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>CometChat React Native</Text>
-        <Text style={styles.headerSubtitle}>
-          {currentUser ? `Welcome, ${currentUser.name}!` : "Please select a user to login"}
-        </Text>
-      </View>
-
-      {/* Content */}
-      <View style={styles.content}>
-        {!currentUser ? (
-          <>
-            <Text style={styles.sectionTitle}>Choose a User to Login:</Text>
-            {SAMPLE_USERS.map((user) => (
-              <TouchableOpacity
-                key={user.uid}
-                style={styles.userButton}
-                onPress={() => loginUser(user)}
-              >
-                <Text style={styles.userButtonText}>{user.name}</Text>
-                <Text style={styles.userButtonSubtext}>ID: {user.uid}</Text>
-              </TouchableOpacity>
-            ))}
-          </>
-        ) : (
-          <View style={styles.loggedInContainer}>
-            <Text style={styles.welcomeText}>
-              You are now logged in as {currentUser.name}
-            </Text>
-            <Text style={styles.infoText}>
-              CometChat UI Kit is ready! You can now implement chat features like:
-            </Text>
-            <View style={styles.featureList}>
-              <Text style={styles.featureItem}>• Conversations List</Text>
-              <Text style={styles.featureItem}>• Messages</Text>
-              <Text style={styles.featureItem}>• Users List</Text>
-              <Text style={styles.featureItem}>• Groups</Text>
-              <Text style={styles.featureItem}>• Calls</Text>
-            </View>
-            <TouchableOpacity 
-              style={styles.logoutButton} 
-              onPress={logoutUser}
-            >
-              <Text style={styles.logoutButtonText}>Logout</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          Status: {isInitialized ? "✅ Connected" : "❌ Disconnected"}
-        </Text>
-      </View>
-    </SafeAreaView>
+    <SafeAreaProvider>
+      <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1 }}>
+        <RootStackNavigator
+          isLoggedIn={isLoggedIn}
+          hasValidAppCredentials={hasValidAppCredentials}
+          setIsLoggedIn={setIsLoggedIn}
+        />
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  loadingContainer: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    backgroundColor: '#f5f5f5',
   },
   loadingText: {
     marginTop: 16,
@@ -236,140 +65,6 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#d32f2f',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  errorMessage: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 24,
-  },
-  retryButton: {
-    backgroundColor: '#3f51b5',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  header: {
-    backgroundColor: '#3f51b5',
-    padding: 20,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#e3f2fd',
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 16,
-  },
-  userButton: {
-    backgroundColor: '#fff',
-    padding: 16,
-    marginBottom: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  userButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  userButtonSubtext: {
-    fontSize: 14,
-    color: '#666',
-  },
-  loggedInContainer: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  welcomeText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#4caf50',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  infoText: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 16,
-    lineHeight: 24,
-  },
-  featureList: {
-    marginBottom: 24,
-  },
-  featureItem: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  logoutButton: {
-    backgroundColor: '#f44336',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignSelf: 'center',
-  },
-  logoutButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  footer: {
-    padding: 20,
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    backgroundColor: '#fff',
-  },
-  footerText: {
-    fontSize: 14,
-    color: '#666',
-  },
 });
+
+export default App;
