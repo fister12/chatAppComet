@@ -9,8 +9,11 @@ import {
   Alert,
   StatusBar,
 } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { CometChatUIKit, UIKitSettingsBuilder } from "@cometchat/chat-uikit-react";
 import { COMETCHAT_APP_ID, COMETCHAT_REGION, COMETCHAT_AUTH_KEY } from '@env';
+import { ConversationsScreen, UsersScreen, GroupsScreen } from './components';
 
 interface User {
   uid: string;
@@ -35,7 +38,94 @@ const SAMPLE_USERS: User[] = [
   { uid: "user3", name: "Charlie Brown" },
 ];
 
-export default function App() {
+const Tab = createBottomTabNavigator();
+
+// Auth Screen Component
+const AuthScreen: React.FC<{
+  onLogin: (user: User) => void;
+  isLoading: boolean;
+}> = ({ onLogin, isLoading }) => {
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+      
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>CometChat React Native</Text>
+        <Text style={styles.headerSubtitle}>Please select a user to login</Text>
+      </View>
+
+      <View style={styles.content}>
+        <Text style={styles.sectionTitle}>Choose a User to Login:</Text>
+        {SAMPLE_USERS.map((user) => (
+          <TouchableOpacity
+            key={user.uid}
+            style={[styles.userButton, isLoading && styles.disabledButton]}
+            onPress={() => !isLoading && onLogin(user)}
+            disabled={isLoading}
+          >
+            <Text style={styles.userButtonText}>{user.name}</Text>
+            <Text style={styles.userButtonSubtext}>ID: {user.uid}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </SafeAreaView>
+  );
+};
+
+// Main App Tabs Component
+const AppTabs: React.FC<{
+  currentUser: User;
+  onLogout: () => void;
+}> = ({ currentUser, onLogout }) => {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        tabBarStyle: styles.tabBar,
+        tabBarActiveTintColor: '#3f51b5',
+        tabBarInactiveTintColor: '#666',
+        headerStyle: {
+          backgroundColor: '#3f51b5',
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+        headerRight: () => (
+          <TouchableOpacity
+            style={styles.logoutHeaderButton}
+            onPress={onLogout}
+          >
+            <Text style={styles.logoutHeaderText}>Logout</Text>
+          </TouchableOpacity>
+        ),
+      }}
+    >
+      <Tab.Screen 
+        name="Conversations" 
+        component={ConversationsScreen}
+        options={{
+          title: `Chats - ${currentUser.name}`,
+        }}
+      />
+      <Tab.Screen 
+        name="Users" 
+        component={UsersScreen}
+        options={{
+          title: 'Users',
+        }}
+      />
+      <Tab.Screen 
+        name="Groups" 
+        component={GroupsScreen}
+        options={{
+          title: 'Groups',
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
+
+export default function AppWithNavigation() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -109,7 +199,7 @@ export default function App() {
       setCurrentUser(null);
     } catch (error) {
       console.error("Logout failed:", error);
-      setError("Failed to logout. Please try again.");
+      Alert.alert("Error", "Failed to logout. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -118,7 +208,7 @@ export default function App() {
   /**
    * Render loading state
    */
-  if (isLoading) {
+  if (isLoading && !currentUser) {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
@@ -135,7 +225,7 @@ export default function App() {
   /**
    * Render error state
    */
-  if (error) {
+  if (error && !currentUser) {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
@@ -157,65 +247,13 @@ export default function App() {
    * Render main application
    */
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>CometChat React Native</Text>
-        <Text style={styles.headerSubtitle}>
-          {currentUser ? `Welcome, ${currentUser.name}!` : "Please select a user to login"}
-        </Text>
-      </View>
-
-      {/* Content */}
-      <View style={styles.content}>
-        {!currentUser ? (
-          <>
-            <Text style={styles.sectionTitle}>Choose a User to Login:</Text>
-            {SAMPLE_USERS.map((user) => (
-              <TouchableOpacity
-                key={user.uid}
-                style={styles.userButton}
-                onPress={() => loginUser(user)}
-              >
-                <Text style={styles.userButtonText}>{user.name}</Text>
-                <Text style={styles.userButtonSubtext}>ID: {user.uid}</Text>
-              </TouchableOpacity>
-            ))}
-          </>
-        ) : (
-          <View style={styles.loggedInContainer}>
-            <Text style={styles.welcomeText}>
-              You are now logged in as {currentUser.name}
-            </Text>
-            <Text style={styles.infoText}>
-              CometChat UI Kit is ready! You can now implement chat features like:
-            </Text>
-            <View style={styles.featureList}>
-              <Text style={styles.featureItem}>• Conversations List</Text>
-              <Text style={styles.featureItem}>• Messages</Text>
-              <Text style={styles.featureItem}>• Users List</Text>
-              <Text style={styles.featureItem}>• Groups</Text>
-              <Text style={styles.featureItem}>• Calls</Text>
-            </View>
-            <TouchableOpacity 
-              style={styles.logoutButton} 
-              onPress={logoutUser}
-            >
-              <Text style={styles.logoutButtonText}>Logout</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          Status: {isInitialized ? "✅ Connected" : "❌ Disconnected"}
-        </Text>
-      </View>
-    </SafeAreaView>
+    <NavigationContainer>
+      {currentUser ? (
+        <AppTabs currentUser={currentUser} onLogout={logoutUser} />
+      ) : (
+        <AuthScreen onLogin={loginUser} isLoading={isLoading} />
+      )}
+    </NavigationContainer>
   );
 }
 
@@ -305,6 +343,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  disabledButton: {
+    opacity: 0.6,
+  },
   userButtonText: {
     fontSize: 16,
     fontWeight: '600',
@@ -315,61 +356,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
-  loggedInContainer: {
+  tabBar: {
     backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  welcomeText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#4caf50',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  infoText: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 16,
-    lineHeight: 24,
-  },
-  featureList: {
-    marginBottom: 24,
-  },
-  featureItem: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  logoutButton: {
-    backgroundColor: '#f44336',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignSelf: 'center',
-  },
-  logoutButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  footer: {
-    padding: 20,
-    alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
-    backgroundColor: '#fff',
+    paddingBottom: 5,
+    paddingTop: 5,
   },
-  footerText: {
+  logoutHeaderButton: {
+    marginRight: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 6,
+  },
+  logoutHeaderText: {
+    color: '#fff',
     fontSize: 14,
-    color: '#666',
+    fontWeight: '600',
   },
 });

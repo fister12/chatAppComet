@@ -10,10 +10,19 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@babel/plugin-proposal-decorators": "^7.28.0",
+    "@cometchat/chat-uikit-react": "^6.1.1",
+    "@react-navigation/bottom-tabs": "^7.4.2",
+    "@react-navigation/native": "^7.1.14",
+    "dotenv": "^17.2.0",
     "expo": "~53.0.20",
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
-    "react-native": "0.79.5"
+    "react-native": "0.79.5",
+    "react-native-dotenv": "^3.4.11",
+    "react-native-safe-area-context": "^5.5.2",
+    "react-native-screens": "^4.13.1",
+    "yarn": "^1.22.22"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
